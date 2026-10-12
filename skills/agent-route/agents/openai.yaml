@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Route"
+  short_description: "Choose subagent models and reasoning effort"
+  default_prompt: "Use $agent-route to recommend an available subagent configuration for this task with my configured decision API."

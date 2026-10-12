@@ -1,0 +1,10 @@
+{
+  "apiFormat": "typesafe",
+  "baseURL": "https://api.typesafe.ai",
+  "model": "jev-latest",
+  "credential": {
+    "type": "env",
+    "name": "DECISION_API_KEY"
+  },
+  "minConfidence": 0.6
+}

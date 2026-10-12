@@ -1,0 +1,7 @@
+# Dependencies and local task data
+node_modules/
+config.local.json
+*.local.json
+.env
+.env.*
+.DS_Store

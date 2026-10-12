@@ -1,0 +1,10 @@
+{
+  "apiFormat": "chat-completions",
+  "baseURL": "https://provider.example/v1",
+  "model": "your-decision-model",
+  "credential": { "type": "env", "name": "DECISION_API_KEY" },
+  "minConfidence": 0.6,
+  "timeoutMs": 10000,
+  "totalTimeoutMs": 45000,
+  "maxRetries": 1
+}
