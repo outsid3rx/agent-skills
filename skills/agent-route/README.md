@@ -17,11 +17,11 @@ Runtime catalog + task variants
 
 ## Install
 
-This skill is part of an Agent Skills collection. After publishing the collection
-on GitHub, replace `OWNER/REPO` with its actual source:
+This skill is part of the [outsid3rx/agent-skills](https://github.com/outsid3rx/agent-skills)
+collection:
 
 ```sh
-npx skills add OWNER/REPO --skill agent-route
+npx skills add outsid3rx/agent-skills --skill agent-route
 ```
 
 To inspect a local checkout before installation, run from the repository root:
@@ -100,8 +100,8 @@ commands against the published collection to check discovery and install this
 skill. The repository-root README explains how to maintain the collection.
 
 ```sh
-npx skills add OWNER/REPO --list
-npx skills add OWNER/REPO --skill agent-route
+npx skills add outsid3rx/agent-skills --list
+npx skills add outsid3rx/agent-skills --skill agent-route
 ```
 
 There is no need to publish this helper as an npm package; `private: true` protects

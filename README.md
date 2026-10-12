@@ -1,5 +1,7 @@
 # Agent Skills
 
+[![skills.sh](https://skills.sh/b/outsid3rx/agent-skills)](https://skills.sh/outsid3rx/agent-skills)
+
 A collection of reusable [Agent Skills](https://agentskills.io/specification).
 Each skill lives in its own directory under `skills/`, with instructions and any
 scripts, references, or examples it needs.
@@ -14,17 +16,17 @@ See the [Agent Route guide](skills/agent-route/README.md) for setup and behavior
 
 ## Install
 
-After publishing this repository on GitHub, replace `OWNER/REPO` with its source:
+Install from [outsid3rx/agent-skills](https://github.com/outsid3rx/agent-skills):
 
 ```sh
 # Discover the available skills
-npx skills add OWNER/REPO --list
+npx skills add outsid3rx/agent-skills --list
 
 # Install one skill
-npx skills add OWNER/REPO --skill agent-route
+npx skills add outsid3rx/agent-skills --skill agent-route
 
 # Install all skills in this collection
-npx skills add OWNER/REPO --skill '*'
+npx skills add outsid3rx/agent-skills --skill '*'
 ```
 
 For a local checkout, run from the repository root:
@@ -92,8 +94,8 @@ separate, authorized checks.
 ## Publish on skills.sh
 
 Publish the complete repository on GitHub, preserving `skills/<skill-name>/`.
-Confirm discovery with `npx skills add OWNER/REPO --list`, then install a skill
-with `npx skills add OWNER/REPO --skill agent-route`.
+Confirm discovery with `npx skills add outsid3rx/agent-skills --list`, then install a skill
+with `npx skills add outsid3rx/agent-skills --skill agent-route`.
 
 The [skills.sh FAQ](https://skills.sh/docs/faq) explains that directory listings
 and rankings are based on installation telemetry. A local repository or discovery
