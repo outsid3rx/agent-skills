@@ -2,11 +2,13 @@
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { prepareRequest, readCredential, route, validateConfig, buildApiRequest, RouteError } from './router.mjs';
+import { loadConfig, loadExecutorCatalog } from './config.mjs';
 
 const help = `agent-route --input task.json [--config config.json] [--dry-run]
 Or: cat task.json | agent-route [options]
 
 Options:
+  --config FILE           Explicit configuration (overrides automatic discovery)
   --api-format FORMAT     typesafe / chat-completions / json-http (required)
   --base-url URL           API root, or full endpoint for json-http (required)
   --decision-model ID      User-selected decision model (required)
@@ -18,6 +20,11 @@ Options:
   --help                  Show help
 
 Exit codes: 0 all selected / dry run; 2 invalid input or API failure; 3 needs review.
+
+Config search: --config, AGENT_ROUTE_CONFIG, ./agent-route.config.local.json,
+then $XDG_CONFIG_HOME/agent-route/config.json (default ~/.config/agent-route/config.json).
+executorCatalog in config restricts choices to a JSON model catalog; input.models
+may verify availability but cannot broaden the configured choices.
 `;
 
 async function jsonFile(path, label) {
@@ -44,7 +51,7 @@ try {
   } catch { throw new RouteError('Invalid CLI arguments; run --help'); }
   if (values.help) process.stdout.write(help);
   else {
-    const rawConfig = values.config ? await jsonFile(values.config, 'config file') : {};
+    const { rawConfig, configPath } = await loadConfig(values.config);
     if (rawConfig === null || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) throw new RouteError('config must be an object');
     if (values['api-format'] !== undefined) rawConfig.apiFormat = values['api-format'];
     if (values['base-url'] !== undefined) rawConfig.baseURL = values['base-url'];
@@ -59,9 +66,10 @@ try {
       type: 'keychain', service: values['keychain-service'], account: values['keychain-account'],
     };
     const config = validateConfig(rawConfig);
+    const executorCatalog = await loadExecutorCatalog(config, configPath);
     if ((!values.input || values.input === '-') && process.stdin.isTTY) throw new RouteError('Provide --input FILE or JSON on stdin');
     const input = await jsonFile(values.input && values.input !== '-' ? values.input : 0, 'input');
-    const prepared = prepareRequest(input, config);
+    const prepared = prepareRequest(input, config, executorCatalog);
     if (values['dry-run']) process.stdout.write(`${JSON.stringify(buildApiRequest(prepared, config), null, 2)}\n`);
     else {
       const key = await readCredential(config.credential);

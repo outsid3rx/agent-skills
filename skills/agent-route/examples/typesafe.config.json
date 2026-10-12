@@ -6,5 +6,6 @@
     "type": "env",
     "name": "DECISION_API_KEY"
   },
-  "minConfidence": 0.6
+  "minConfidence": 0.6,
+  "executorCatalog": "./executor-catalog.json"
 }

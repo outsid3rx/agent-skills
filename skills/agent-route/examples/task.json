@@ -15,33 +15,5 @@
       "verification": "Check the original test and affected behavior",
       "constraints": "Apply only after investigation; preserve unrelated behavior"
     }
-  ],
-  "models": [
-    {
-      "id": "example-fast-model",
-      "provider": "example-runtime",
-      "description": "Fictional catalog entry: fast for bounded searches and straightforward fixes; lower relative cost than example-analysis-model",
-      "efforts": [
-        "low",
-        "medium"
-      ],
-      "effort_descriptions": {
-        "low": "Short tasks with clear steps and simple verification; lower reasoning cost",
-        "medium": "Analysis across several related components; higher reasoning cost than low"
-      }
-    },
-    {
-      "id": "example-analysis-model",
-      "provider": "example-runtime",
-      "description": "Fictional catalog entry: stronger for ambiguous diagnosis and multi-step analysis; higher relative cost than example-fast-model",
-      "efforts": [
-        "medium",
-        "high"
-      ],
-      "effort_descriptions": {
-        "medium": "Multi-step analysis with bounded uncertainty; lower reasoning cost than high",
-        "high": "Complex uncertain reasoning; higher reasoning cost and latency"
-      }
-    }
   ]
 }

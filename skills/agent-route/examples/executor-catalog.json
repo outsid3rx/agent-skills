@@ -1,0 +1,32 @@
+[
+  {
+    "id": "example-general-model",
+    "provider": "example-runtime",
+    "description": "Fictional example: general coding and review tasks; higher relative cost than example-fast-model. Replace with verified runtime information.",
+    "efforts": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "effort_descriptions": {
+      "low": "Low reasoning effort; user-facing light where the runtime calls it low.",
+      "medium": "Medium reasoning effort.",
+      "high": "High reasoning effort."
+    }
+  },
+  {
+    "id": "example-fast-model",
+    "provider": "example-runtime",
+    "description": "Fictional example: fast and lower relative cost for bounded tasks. Replace with verified runtime information.",
+    "efforts": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "effort_descriptions": {
+      "low": "Low reasoning effort; user-facing light where the runtime calls it low.",
+      "medium": "Medium reasoning effort.",
+      "high": "High reasoning effort."
+    }
+  }
+]

@@ -3,7 +3,7 @@ name: agent-route
 description: Recommend a subagent model and reasoning effort from the current runtime's available configurations using a user-selected decision API. Use when planning authorized delegation and comparing executor cost, quality, or speed.
 license: MIT
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Agent Route
@@ -14,12 +14,20 @@ final decision and launches any subagent through its own runtime.
 
 ## Establish the available choices
 
-Read the current runtime's model catalog and supported reasoning efforts. Include
-only configurations that can actually be selected under the active instructions.
+Check the user's configuration for an `executorCatalog` profile before building
+the request. The CLI discovers configuration automatically; see
+[references/usage.md](references/usage.md) for precedence and setup. Preserve the
+configured choices unless the user asks to change them. Read the current runtime's
+model catalog and supported reasoning efforts. Include only configurations that can actually be selected under the active instructions.
 Use documented capabilities, observed performance, and known relative costs;
 do not infer capability or price from model names. Mark unknown cost information
-as unknown rather than inventing it. If executor configuration cannot be selected,
-report that limitation and continue within the runtime's supported workflow.
+as unknown rather than inventing it. A configured profile fixes the allowed
+model/effort pairs. Supply the observed runtime catalog in `input.models` to verify
+that every configured pair remains available; extra runtime choices cannot broaden
+the profile. If a configured pair is missing, report the mismatch rather than
+silently expanding or shrinking the catalog. The CLI cannot discover runtime
+availability or resolve "latest" aliases by itself. If executor configuration
+cannot be selected, report that limitation and continue within the runtime's supported workflow.
 
 This skill does not authorize delegation, model overrides, paid API calls, or
 additional work. Preserve existing user choices and runtime permissions. Evaluate
@@ -39,8 +47,12 @@ justifies the additional cost. This is a qualitative recommendation, not a billi
 estimate or budget enforcement mechanism.
 
 Read [references/usage.md](references/usage.md) when configuring the API, constructing
-input, or interpreting output. Start from [examples/task.json](examples/task.json),
-replacing the fictional catalog with the actual available configurations.
+input, or interpreting output. Start from [examples/task.json](examples/task.json)
+and [examples/executor-catalog.json](examples/executor-catalog.json). Replace the
+fictional IDs, efforts, capability descriptions, and cost information when setting
+up a profile. Keep the approved profile outside the installed skill directory so
+updates preserve it. Use exact runtime effort names; `light` can be described as
+`low` only when `low` is the runtime's supported name.
 
 ## Configure and run
 
@@ -57,18 +69,23 @@ Install the pinned dependency in that directory when needed:
 npm --prefix "$SKILL_DIR" ci --ignore-scripts --no-audit --no-fund
 ```
 
-Keep task/config files in the task workspace. Store credentials in an environment
-variable or macOS Keychain, never in the skill or request JSON. Preview the payload
+Save reusable configuration in `~/.config/agent-route/config.json` (or under
+`XDG_CONFIG_HOME`); use `AGENT_ROUTE_CONFIG` or `--config` for another location.
+`executorCatalog` is a path to a JSON model array, relative to that config file.
+The configured catalog is authoritative; tasks may omit `models`, but supply the
+observed catalog when an availability check is needed. Without `executorCatalog`,
+`input.models` remains required. Keep task files in the task workspace.
+Store credentials in an environment variable or macOS Keychain, never in the skill or request JSON. Preview the payload
 without reading credentials or calling the API:
 
 ```sh
-node "$SKILL_DIR/scripts/agent-route.mjs" --input task.json --config config.local.json --dry-run
+node "$SKILL_DIR/scripts/agent-route.mjs" --input task.json --dry-run
 ```
 
 Once the configuration and API use are authorized, run:
 
 ```sh
-node "$SKILL_DIR/scripts/agent-route.mjs" --input task.json --config config.local.json
+node "$SKILL_DIR/scripts/agent-route.mjs" --input task.json
 ```
 
 ## Apply the result

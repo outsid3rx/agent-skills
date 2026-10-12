@@ -13,6 +13,8 @@ scripts, references, or examples it needs.
 | [agent-route](skills/agent-route/SKILL.md) | Recommend a subagent model and reasoning effort using a user-selected decision API | Node.js 20.3+, npm, and a runtime with selectable subagent configurations |
 
 See the [Agent Route guide](skills/agent-route/README.md) for setup and behavior.
+It supports a reusable local profile with automatic config discovery and a fixed
+executor catalog; the example profile demonstrates six model/effort choices.
 
 ## Install
 

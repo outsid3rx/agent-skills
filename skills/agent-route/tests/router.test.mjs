@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { after } from 'node:test';
 import { readCredential, prepareRequest, parseResponse, route, validateConfig, buildApiRequest } from '../scripts/router.mjs';
 
 const input = {
@@ -12,6 +16,10 @@ const input = {
 const settings = { apiFormat: 'typesafe', baseURL: 'https://decision.example/api', model: 'example-router' };
 const config = validateConfig({ ...settings, maxRetries: 0 });
 const prepared = prepareRequest(input, config);
+const cliCwd = mkdtempSync(join(tmpdir(), 'agent-route-legacy-'));
+after(() => rmSync(cliCwd, { recursive: true, force: true }));
+const cliEnv = { ...process.env, XDG_CONFIG_HOME: join(cliCwd, 'isolated-config') };
+delete cliEnv.AGENT_ROUTE_CONFIG;
 function response({ choice = 'pair_0', confidence = 0.85, probabilities = { pair_0: 0.9, pair_1: 0.05, insufficient_information: 0.05 } } = {}) {
   return { model: 'example-router', answers: Object.fromEntries(input.variants.map((_, i) => [
     `variant_${i}`, { type: 'choice', choice, confidence, probabilities },
@@ -161,11 +169,11 @@ test('custom JSON adapter calls the exact endpoint and shares validation and ret
 
 test('CLI dry-run reads stdin without a key; invalid input stays off stdout', () => {
   const cli = fileURLToPath(new URL('../scripts/agent-route.mjs', import.meta.url));
-  const dry = spawnSync(process.execPath, [cli, '--dry-run', '--api-format', 'typesafe', '--base-url', settings.baseURL, '--decision-model', settings.model, '--key-env', 'UNSET_ROUTE_TEST_KEY'], { input: JSON.stringify(input), encoding: 'utf8' });
+  const dry = spawnSync(process.execPath, [cli, '--dry-run', '--api-format', 'typesafe', '--base-url', settings.baseURL, '--decision-model', settings.model, '--key-env', 'UNSET_ROUTE_TEST_KEY'], { input: JSON.stringify(input), encoding: 'utf8', cwd: cliCwd, env: cliEnv });
   assert.equal(dry.status, 0, dry.stderr);
   assert.equal(dry.stderr, '');
   assert.equal(JSON.parse(dry.stdout).model, settings.model);
-  const bad = spawnSync(process.execPath, [cli, '--dry-run', '--api-format', 'typesafe', '--base-url', settings.baseURL, '--decision-model', settings.model], { input: '{not-json', encoding: 'utf8' });
+  const bad = spawnSync(process.execPath, [cli, '--dry-run', '--api-format', 'typesafe', '--base-url', settings.baseURL, '--decision-model', settings.model], { input: '{not-json', encoding: 'utf8', cwd: cliCwd, env: cliEnv });
   assert.equal(bad.status, 2);
   assert.equal(bad.stdout, '');
   assert.match(bad.stderr, /valid JSON/);
@@ -187,7 +195,7 @@ test('CLI runs through the real SDK and returns exit 0 or 3 with JSON', () => {
     const result = spawnSync(process.execPath, [
       '--import', `data:text/javascript,${encodeURIComponent(preload)}`,
       cli, '--api-format', 'typesafe', '--base-url', settings.baseURL, '--decision-model', settings.model, '--key-env', 'ROUTE_TEST_KEY',
-    ], { input: JSON.stringify(input), encoding: 'utf8', env: { ...process.env, ROUTE_TEST_KEY: 'test-secret', ROUTE_TEST_REVIEW: review } });
+    ], { input: JSON.stringify(input), encoding: 'utf8', cwd: cliCwd, env: { ...cliEnv, ROUTE_TEST_KEY: 'test-secret', ROUTE_TEST_REVIEW: review } });
     assert.equal(result.status, review === '1' ? 3 : 0, result.stderr);
     assert.equal(result.stderr, '');
     const output = JSON.parse(result.stdout);

@@ -42,6 +42,41 @@ Environment credentials work across platforms; Keychain credentials require
 macOS. The host must expose selectable subagent configurations for recommendations
 to be actionable. This package provides neither a launcher nor automatic hooks.
 
+## Configure once
+
+Configuration can be selected with `--config FILE` or `AGENT_ROUTE_CONFIG`. The
+CLI otherwise checks `./agent-route.config.local.json`, then
+`$XDG_CONFIG_HOME/agent-route/config.json` (default `~/.config/agent-route/config.json`).
+
+A reusable profile has two JSON files outside the installed skill:
+
+```text
+~/.config/agent-route/
+├── config.json      # Decision API, credential reference, executorCatalog path
+└── models.json      # Allowed executor models and their supported efforts
+```
+
+Copy [examples/config.json](examples/config.json) to `config.json` and
+[examples/executor-catalog.json](examples/executor-catalog.json) to `models.json`.
+Fill in your decision provider's API settings and set:
+
+```json
+{ "executorCatalog": "./models.json" }
+```
+
+Replace the fictional catalog with actual runtime model IDs, effort names,
+capability descriptions, and known cost information. The example demonstrates
+**2 models × 3 efforts = 6 configurations**; the catalog format is universal.
+Use `low` when your runtime calls the user's `light` setting `low`.
+The [configuration guide](references/usage.md#configuration) explains every field,
+path resolution, precedence, and secret storage.
+
+The configured catalog fixes the choices. Tasks may omit `models`; supplying
+current runtime `models` verifies that every configured pair is still available.
+Extra runtime choices cannot broaden the profile, and unavailable choices cause
+an error. Without `executorCatalog`, the original `input.models` workflow remains
+supported. Model versions are explicit; the CLI does not discover "latest" IDs.
+
 ## Use with an agent
 
 Example requests:
@@ -66,13 +101,12 @@ npm test
 ```
 
 The preview performs no network request and reads no credential. Example models
-and costs are fictional. For a real request, replace them with your runtime's
-catalog, create a local task file, and configure your chosen decision API:
+and costs are fictional. After setting up a reusable profile, create a task file
+and run from any working directory:
 
 ```sh
-cp examples/config.json config.local.json
-# Edit apiFormat, baseURL and model; set DECISION_API_KEY through your secret manager.
-node scripts/agent-route.mjs --input task.json --config config.local.json
+node /path/to/installed/agent-route/scripts/agent-route.mjs --input task.json --dry-run
+node /path/to/installed/agent-route/scripts/agent-route.mjs --input task.json
 ```
 
 Supported formats are OpenAI-compatible Chat Completions, TypeSafe Choice, and a
@@ -80,7 +114,8 @@ custom JSON HTTP endpoint. TypeSafe/Jev is an optional example, never a default.
 
 ## Behavior and limits
 
-- Recommends only supplied model/effort pairs; a runtime catalog must be provided.
+- Recommends only configured model/effort pairs when a profile is selected;
+  otherwise uses the task's runtime catalog.
 - Supports `balanced` (default), `quality`, `speed`, and `cost` priorities.
 - Returns `needs_review` for insufficient information or confidence below the
   configured threshold. Exit codes are `0` selected/preview, `3` review, `2` error.
@@ -110,7 +145,7 @@ against accidental npm publication.
 ## Development
 
 `npm test` runs mocked API/SDK tests. It verifies request/response validation,
-timeouts, retries, credential handling, and CLI behavior; it does not validate
+timeouts, retries, credential handling, config discovery, catalog enforcement, and CLI behavior; it does not validate
 live provider availability or recommendation quality. The SDK is pinned in
 `package-lock.json`. Only the TypeSafe adapter imports it; the other adapters and
 dry runs use Node's built-in APIs.

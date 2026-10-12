@@ -35,6 +35,7 @@ export function validateConfig(raw = {}) {
   text(config.model, 'config.model');
   if (!['typesafe', 'chat-completions', 'json-http'].includes(config.apiFormat)) fail('apiFormat must be typesafe, chat-completions, or json-http');
   if (config.jsonMode !== undefined && typeof config.jsonMode !== 'boolean') fail('jsonMode must be a boolean');
+  if (config.executorCatalog !== undefined) text(config.executorCatalog, 'config.executorCatalog');
   let url;
   try { url = new URL(config.baseURL); } catch { fail('baseURL must be an absolute URL'); }
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
@@ -74,26 +75,13 @@ export async function readCredential(credential, { env = process.env, platform =
   }
 }
 
-export function prepareRequest(input, config) {
-  if (!object(input)) fail('input must be a JSON object');
-  const task = text(input.task, 'task');
-  const priority = input.priority ?? 'balanced';
-  if (!['quality', 'speed', 'cost', 'balanced'].includes(priority)) fail('priority must be quality, speed, cost, or balanced');
-  const variants = list(input.variants, 'variants').map((variant, i) => {
-    if (!object(variant)) fail(`variants[${i}] must be an object`);
-    const result = { id: text(variant.id, `variants[${i}].id`), description: text(variant.description, `variants[${i}].description`) };
-    for (const field of ['expected_result', 'verification', 'constraints']) {
-      if (variant[field] !== undefined) result[field] = text(variant[field], `variants[${i}].${field}`);
-    }
-    return result;
-  });
-  unique(variants.map(v => v.id), 'variant IDs');
-  const models = list(input.models, 'models').map((model, i) => {
-    if (!object(model)) fail(`models[${i}] must be an object`);
+function validateModels(raw, label) {
+  const models = list(raw, label).map((model, i) => {
+    if (!object(model)) fail(`${label}[${i}] must be an object`);
     const result = {
-      id: text(model.id, `models[${i}].id`),
-      description: text(model.description, `models[${i}].description`),
-      efforts: list(model.efforts, `models[${i}].efforts`).map(e => text(e, 'effort')),
+      id: text(model.id, `${label}[${i}].id`),
+      description: text(model.description, `${label}[${i}].description`),
+      efforts: list(model.efforts, `${label}[${i}].efforts`).map(e => text(e, 'effort')),
     };
     unique(result.efforts, 'model efforts');
     if (model.provider !== undefined) result.provider = text(model.provider, 'model.provider');
@@ -108,6 +96,35 @@ export function prepareRequest(input, config) {
     return result;
   });
   unique(models.map(m => `${m.provider ?? ''}\u0000${m.id}`), 'provider/model IDs');
+  return models;
+}
+
+export function prepareRequest(input, config, executorCatalog) {
+  if (!object(input)) fail('input must be a JSON object');
+  const task = text(input.task, 'task');
+  const priority = input.priority ?? 'balanced';
+  if (!['quality', 'speed', 'cost', 'balanced'].includes(priority)) fail('priority must be quality, speed, cost, or balanced');
+  const variants = list(input.variants, 'variants').map((variant, i) => {
+    if (!object(variant)) fail(`variants[${i}] must be an object`);
+    const result = { id: text(variant.id, `variants[${i}].id`), description: text(variant.description, `variants[${i}].description`) };
+    for (const field of ['expected_result', 'verification', 'constraints']) {
+      if (variant[field] !== undefined) result[field] = text(variant[field], `variants[${i}].${field}`);
+    }
+    return result;
+  });
+  unique(variants.map(v => v.id), 'variant IDs');
+  if (config.executorCatalog !== undefined && executorCatalog === undefined) fail('Load the configured executor catalog before preparing the request');
+  const available = input.models === undefined && executorCatalog !== undefined
+    ? undefined : validateModels(input.models, 'models');
+  const models = executorCatalog === undefined ? available : validateModels(executorCatalog, 'executorCatalog');
+  if (executorCatalog !== undefined && available !== undefined) {
+    for (const model of models) {
+      const runtimeModel = available.find(m => m.id === model.id && m.provider === model.provider);
+      if (!runtimeModel || model.efforts.some(effort => !runtimeModel.efforts.includes(effort))) {
+        fail('Configured model/effort is unavailable in input.models; refresh the executor catalog or runtime catalog');
+      }
+    }
+  }
   const pairs = models.flatMap(model => model.efforts.map(effort => ({
     model: model.id, effort, ...(model.provider ? { provider: model.provider } : {}),
     description: model.description,
